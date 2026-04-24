@@ -138,17 +138,12 @@ store( NS, {
 			ctx.errorMessage = '';
 
 			try {
-				// Always refetch config right before submit: page HTML is often cached
-				// (BigScoots, Cloudflare, LiteSpeed, etc.) so the server-rendered
-				// nonce in data-wp-context goes stale within hours and every visitor
-				// hits "Cookie check failed". The REST response below is uncached
-				// (cache-control: private, no-cache) so the nonce it returns is
-				// always valid.
-				const config = yield fetch( ctx.restConfigUrl, { credentials: 'same-origin' } )
+				// Fetch the server's base URL + default expiry. The REST endpoint is
+				// uncacheable (cache-control: private) so the values are always current.
+				const config = yield fetch( ctx.restConfigUrl, { credentials: 'omit' } )
 					.then( ( r ) => r.json() );
 
 				const expiresIn = ctx.expiresIn > 0 ? ctx.expiresIn : config.expiresIn;
-				const nonce     = config.nonce || ctx.nonce; // fresh > baked-in
 
 				const { secretId, payloadJson, checksum } = yield buildSecret( {
 					content: ctx.secret,
@@ -159,12 +154,14 @@ store( NS, {
 
 				ctx.status = 'sending';
 
+				// No X-WP-Nonce header: WP cookie auth is unreliable through page-cache
+				// + CDN layers (BigScoots, Cloudflare strip/rewrite auth on /wp-json
+				// POSTs). Server-side permission check relies on Origin + rate limit.
 				const res = yield fetch( ctx.restSubmitUrl, {
 					method: 'POST',
-					credentials: 'same-origin',
+					credentials: 'omit',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-WP-Nonce': nonce,
 						'X-Scrt-Secret-Id': secretId,
 						'X-Scrt-Checksum': checksum,
 					},

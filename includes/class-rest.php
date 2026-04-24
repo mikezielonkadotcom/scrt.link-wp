@@ -54,33 +54,43 @@ final class Rest {
 	 * block's view module). The nonce ties the request to the current session.
 	 */
 	public function permission_check( \WP_REST_Request $request ) {
-		$nonce = $request->get_header( 'x_wp_nonce' );
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-			return new \WP_Error( 'rest_forbidden', __( 'Invalid or missing nonce.', 'scrt-link-wp' ), [ 'status' => 403 ] );
-		}
-
+		// Note on auth: this endpoint is intentionally reachable by anonymous visitors —
+		// the block is a public "send me a secret" form. We deliberately DO NOT use
+		// WP cookie-based nonces here. Most managed-WP hosts and CDNs (BigScoots,
+		// Cloudflare page cache, LiteSpeed, etc.) either strip auth cookies from
+		// /wp-json POSTs or serve cached HTML with stale nonces baked in — both
+		// produce "Cookie check failed" for real visitors. Security posture relies on:
+		//
+		//   1. Content is end-to-end encrypted client-side before it reaches this
+		//      endpoint (nothing sensitive for an attacker to steal).
+		//   2. Per-IP rate limit (see check_rate_limit) caps abuse.
+		//   3. Origin-header check below rejects cross-origin POSTs from other sites.
+		//   4. The scrt.link API key never leaves PHP; attackers can only burn the
+		//      site owner's upstream quota, which is further rate-limited by scrt.link.
 		if ( ! Plugin::get_option( 'api_key' ) ) {
 			return new \WP_Error( 'scrt_link_not_configured', __( 'scrt.link plugin has not been configured.', 'scrt-link-wp' ), [ 'status' => 503 ] );
+		}
+
+		$origin = (string) $request->get_header( 'origin' );
+		if ( '' !== $origin ) {
+			$site_host   = wp_parse_url( home_url(), PHP_URL_HOST );
+			$origin_host = wp_parse_url( $origin, PHP_URL_HOST );
+			if ( $site_host && $origin_host && 0 !== strcasecmp( $site_host, $origin_host ) ) {
+				return new \WP_Error( 'rest_forbidden_origin', __( 'Cross-origin submissions are not permitted.', 'scrt-link-wp' ), [ 'status' => 403 ] );
+			}
 		}
 
 		return true;
 	}
 
 	/**
-	 * Public config for the block frontend. Returns base URL, default expiry, and a
-	 * fresh REST nonce. The nonce is minted here (on a never-cached REST response)
-	 * rather than baked into the block's server-rendered markup — that markup is
-	 * usually served from a page cache (BigScoots, Cloudflare, LiteSpeed, etc.),
-	 * which would mean every visitor shares the same stale nonce and submit fails
-	 * with "Cookie check failed" once that nonce hits its 12–24h TTL. Never exposes
-	 * the API key.
+	 * Public config for the block frontend. Never exposes the API key.
 	 */
 	public function handle_config(): \WP_REST_Response {
 		return new \WP_REST_Response(
 			[
 				'baseUrl'   => untrailingslashit( (string) Plugin::get_option( 'base_url' ) ),
 				'expiresIn' => (int) Plugin::get_option( 'default_expiry' ),
-				'nonce'     => wp_create_nonce( 'wp_rest' ),
 			],
 			200
 		);

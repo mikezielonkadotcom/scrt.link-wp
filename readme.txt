@@ -4,7 +4,7 @@ Tags:              block, encryption, privacy, secrets, scrt.link
 Requires at least: 6.6
 Tested up to:      6.9
 Requires PHP:      7.4
-Stable tag:        0.1.4
+Stable tag:        0.1.5
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,8 +42,11 @@ Yes. Set the base URL in **Settings → scrt.link** to your deployment.
 
 == Changelog ==
 
+= 0.1.5 =
+* Drop WP cookie-based nonce auth for the submit endpoint. Managed-WP hosts + CDN layers (BigScoots, Cloudflare) strip or rewrite auth cookies on `/wp-json` POSTs, so WP nonce verification would fail for real visitors with "Cookie check failed" no matter how fresh the nonce was. The endpoint is now protected by: (1) Origin-header check (rejects cross-origin POSTs), (2) per-IP rate limit, (3) end-to-end encryption of the payload itself, (4) the scrt.link API key never leaving PHP.
+
 = 0.1.4 =
-* Fix "Cookie check failed" on cached pages — visitors on page-cached sites (BigScoots, Cloudflare, LiteSpeed) were sharing a stale REST nonce baked into the server-rendered block markup, so submissions failed with a nonce error once the shared nonce hit its 12-24h TTL. The view module now fetches a fresh nonce from the (never-cached) `/wp-json/scrt-link/v1/config` endpoint right before submitting.
+* Attempted fix for "Cookie check failed" by refetching nonces from an uncached REST endpoint. Turned out insufficient — the CDN layer interferes with cookies on `/wp-json` POSTs regardless. Superseded by 0.1.5.
 
 = 0.1.0 =
 * Initial release.
