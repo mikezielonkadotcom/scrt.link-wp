@@ -3,7 +3,7 @@
  * Plugin Name:       scrt.link for WordPress
  * Plugin URI:        https://github.com/mikezielonkadotcom/scrt-link-wp
  * Description:       Drop a block onto any page to let visitors send you end-to-end encrypted, self-destructing secrets via scrt.link.
- * Version:           0.1.3
+ * Version:           0.1.4
  * Requires at least: 6.6
  * Requires PHP:      7.4
  * Author:            Mike Zielonka
@@ -20,7 +20,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SCRT_LINK_WP_VERSION', '0.1.3' );
+define( 'SCRT_LINK_WP_VERSION', '0.1.4' );
 define( 'SCRT_LINK_WP_FILE', __FILE__ );
 define( 'SCRT_LINK_WP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SCRT_LINK_WP_URL', plugin_dir_url( __FILE__ ) );

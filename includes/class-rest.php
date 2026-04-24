@@ -67,13 +67,20 @@ final class Rest {
 	}
 
 	/**
-	 * Public config for the block frontend — base URL only. Never exposes the API key.
+	 * Public config for the block frontend. Returns base URL, default expiry, and a
+	 * fresh REST nonce. The nonce is minted here (on a never-cached REST response)
+	 * rather than baked into the block's server-rendered markup — that markup is
+	 * usually served from a page cache (BigScoots, Cloudflare, LiteSpeed, etc.),
+	 * which would mean every visitor shares the same stale nonce and submit fails
+	 * with "Cookie check failed" once that nonce hits its 12–24h TTL. Never exposes
+	 * the API key.
 	 */
 	public function handle_config(): \WP_REST_Response {
 		return new \WP_REST_Response(
 			[
 				'baseUrl'   => untrailingslashit( (string) Plugin::get_option( 'base_url' ) ),
 				'expiresIn' => (int) Plugin::get_option( 'default_expiry' ),
+				'nonce'     => wp_create_nonce( 'wp_rest' ),
 			],
 			200
 		);

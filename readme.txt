@@ -4,7 +4,7 @@ Tags:              block, encryption, privacy, secrets, scrt.link
 Requires at least: 6.6
 Tested up to:      6.9
 Requires PHP:      7.4
-Stable tag:        0.1.3
+Stable tag:        0.1.4
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,14 +42,8 @@ Yes. Set the base URL in **Settings → scrt.link** to your deployment.
 
 == Changelog ==
 
-= 0.1.3 =
-* Verify self-update path via Git Updater (no code changes).
-
-= 0.1.2 =
-* Rename GitHub repo scrt.link-wp → scrt-link-wp (no dot) so the release folder name, main plugin file, and repo slug all match. Fixes Git Updater auto-update path.
-
-= 0.1.1 =
-* Tighten release zip — drop `/src` directory entirely (render.php and block.json already live in `/build`).
+= 0.1.4 =
+* Fix "Cookie check failed" on cached pages — visitors on page-cached sites (BigScoots, Cloudflare, LiteSpeed) were sharing a stale REST nonce baked into the server-rendered block markup, so submissions failed with a nonce error once the shared nonce hit its 12-24h TTL. The view module now fetches a fresh nonce from the (never-cached) `/wp-json/scrt-link/v1/config` endpoint right before submitting.
 
 = 0.1.0 =
 * Initial release.
